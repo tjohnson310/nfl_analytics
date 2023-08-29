@@ -1,0 +1,6 @@
+storage/
+
+common/API_credentials.py
+
+*/__pycache__/
+.idea/
