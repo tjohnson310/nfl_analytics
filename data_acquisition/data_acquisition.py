@@ -2,7 +2,7 @@ import requests
 from os.path import exists
 import pandas as pd
 
-from common.endpoints import *
+from endpoints import *
 from common.Common import headers
 from common.Paths import STORAGE
 
@@ -34,9 +34,20 @@ def get_teams_list():
         teams_list = teams_df["Key"].values
         return teams_list
 
-def get_players_df():
+def get_players_df(existing=True):
     teams = get_teams_list()
     players = {}
+    player_file = f"{STORAGE}/base_players_info.ftr"
+
+    if existing:
+        # User wants to grab the player dataframe that already exists.
+        if exists(player_file):
+            players_df = pd.read_feather(player_file)
+            print(f'Players: {players_df.to_string()}\n')
+            return players_df
+        else:
+            print("No file containing basic player data exists. Pulling from web...")
+            pass
 
     for team in teams:
         active_players = requests.get(get_players_by_team_endpoint(team), headers=headers)
@@ -51,7 +62,7 @@ def get_players_df():
             raise Exception(f"Failed to retrieve player data. Status code: {active_players.status_code}")
 
     players_df = pd.DataFrame.from_dict(players, orient='index')
-    players_df.reset_index().to_feather(f"{STORAGE}/base_players_info.ftr")
+    players_df.reset_index().to_feather(player_file)
 
     print(f'Players: {players_df.to_string()}\n')
 
@@ -71,4 +82,4 @@ def get_player_info_from_api_obj(player: dict, team: str):
                    "TeamID": player["TeamID"]}
     return player_info
 
-get_players_df()
+get_players_df(True)
